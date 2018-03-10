@@ -8,23 +8,23 @@ import (
 
 const (
   version = "0.0.1"
-  description = "syncs audio collection between two locations"
+  description = "smart syncs files between two paths"
 )
 
 // positional args template
 const args = `
 Positional Args:
   LABEL           give label for subsequent use
-  PATH1           1st directory path of audio collection
-  PATH2           2nd directory path of audio collection
+  PATH1           1st directory path
+  PATH2           2nd directory path
 `
 
 // usage template
 const printUsage = `
-audio-sync v%s
+ssync v%s
 %s
 
-Usage: audio-sync [OPTIONS] LABEL PATH1 PATH2
+Usage: ssync [OPTIONS] LABEL PATH1 PATH2
 %s
 Options:
 `

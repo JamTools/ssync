@@ -1,5 +1,5 @@
-# audio-sync
+# ssync
 
-This is a process for synchronizing a music collection between two locations.
+Synchronize files between two paths.
 
-It supports an evolving file/folder structure, removing files intentionally deleted on the other end.
+On subsequent use, it removes files intentionally deleted from one path on the other.
