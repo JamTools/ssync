@@ -14,11 +14,14 @@ import (
 type Args struct {
   Label string
   Paths []string
+  In []string
+  Out []string
 }
 
 // main package entry
 func main() {
-  a := &Args{ Label: flag.Arg(0), Paths: make([]string, 2) }
+  a := &Args{ Label: flag.Arg(0), Paths: make([]string, 2),
+    In: make([]string, 0), Out: make([]string, 0) }
 
   // check paths exist and are directories
   for x, i := range []int{1, 2} {
@@ -35,29 +38,28 @@ func main() {
   fmt.Printf("\nLabel: %s\nPath1: %s\nPath2: %s\n\n", 
     a.Label, a.Paths[0], a.Paths[1])
 
+  a.load()
   a.process()
+  a.update()
+  a.save()
 }
 
-func (a *Args) process() {
-  fileName := ".ssync-" + a.Label
-
-  // load previous paths from file: $path/.ssync-$label
-  // check both paths in case one accidentally deleted
-  prevList := make([]string, 0)
+// load previous paths from file: $path/.ssync-$label
+// check both paths in case one accidentally deleted
+func (a *Args) load() {
   for i := range a.Paths {
-    prevList, _ = stringSliceFromFile(filepath.Join(a.Paths[i], fileName))
-    if len(prevList) > 0 {
+    a.In, _ = stringSliceFromFile(filepath.Join(a.Paths[i], ".ssync-" + a.Label))
+    if len(a.In) > 0 {
       break
     }
   }
-  sort.Strings(prevList)
+  sort.Strings(a.In)
 
-  // slice for updated paths file to be saved at end
-  outList := make([]string, 0)
+  fmt.Printf("prev: %v\n\n", a.In)
+}
 
-  // DEBUG
-  fmt.Printf("prev: %v\n\n", prevList)
-
+// delete, copy new
+func (a *Args) process() {
   for i := range a.Paths {
     paths, err := stringSliceFromPathWalk(a.Paths[i])
     if err != nil {
@@ -65,65 +67,72 @@ func (a *Args) process() {
     }
     sort.Strings(paths)
 
-    otherPath := a.Paths[1 ^ i]
-
     fmt.Printf("%v\n\n", a.Paths[i])
 
-    deleteList := notIn(prevList, paths)
+    // handle deleted files
+    deleteList := notIn(a.In, paths)
     if len(deleteList) > 0 {
-      fmt.Printf("delete from %s : %v\n\n", otherPath, deleteList)
+      fmt.Printf("delete from %s : %v\n\n", a.Paths[1^i], deleteList)
 
       del := true
       if flagConfirm {
         // ask to confirm deleted
-        del = deleteConfirm(deleteList, otherPath)
+        del = deleteConfirm(deleteList, a.Paths[1^i])
       }
 
       if del {
-        delete(deleteList, otherPath)
+        delete(deleteList, a.Paths[1^i])
       } else {
-        // skip delete (add to outList to ask to confirm delete next time)
-        outList = append(outList, notIn(outList, deleteList)...)
+        // skip delete (add to a.Out to ask to confirm delete next time)
+        a.Out = append(a.Out, notIn(a.Out, deleteList)...)
       }
     }
 
-    newList := notIn(paths, prevList)
+    // handle new files
+    newList := notIn(paths, a.In)
     if len(newList) > 0 {
-      fmt.Printf("new in %s : %v\n\n", otherPath, newList)
+      fmt.Printf("new in %s : %v\n\n", a.Paths[1^i], newList)
 
-      err = create(newList, a.Paths[i], otherPath)
+      err = create(newList, a.Paths[i], a.Paths[1^i])
       if err != nil {
         log.Fatalf("%v", err)
       }
     }
   }
+}
 
-  // update modified
-  err := update(prevList, a.Paths[0], a.Paths[1])
-  if err != nil {
-    log.Fatalf("%v", err)
+// update common files if one is more recently updated
+func (a *Args) update() {
+  for i := range a.In {
+    src, dest := mostRecentlyModified(a.In[i], a.Paths[0], a.Paths[1])
+    if len(src) > 0 && len(dest) > 0 {
+      err := copyFile(src, dest)
+      if err != nil {
+        log.Fatalf("%v", err)
+      }
+    }
   }
+}
 
-  // append to outList
+// append and save updated paths to: $path/.ssync-$label
+func (a *Args) save() {
+  // append to a.Out
   for i := range a.Paths {
-    currentPaths, err := stringSliceFromPathWalk(a.Paths[i])
+    paths, err := stringSliceFromPathWalk(a.Paths[i])
     if err != nil {
       log.Fatalf("%v", err)
     }
-    sort.Strings(currentPaths)
 
-    outList = append(outList, notIn(currentPaths, outList)...)
+    a.Out = append(a.Out, notIn(paths, a.Out)...)
+    sort.Strings(a.Out)
   }
-  sort.Strings(outList)
 
-  // write outList to file
-  d1 := []byte(strings.Join(outList, "\n")+"\n")
+  // write a.Out to file
+  d1 := []byte(strings.Join(a.Out, "\n")+"\n")
   for i := range a.Paths {
-    err := ioutil.WriteFile(filepath.Join(a.Paths[i], fileName), d1, 0644)
+    err := ioutil.WriteFile(filepath.Join(a.Paths[i], ".ssync-" + a.Label), d1, 0644)
     if err != nil {
       log.Fatalf("%v", err)
     }
   }
-
-  return
 }

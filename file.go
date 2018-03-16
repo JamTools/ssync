@@ -130,20 +130,6 @@ func create(paths []string, srcPath, destPath string) (err error) {
   return
 }
 
-// update common files if one is more recently updated
-func update(paths []string, path1, path2 string) (err error) {
-  for i := range paths {
-    src, dest := mostRecentlyModified(paths[i], path1, path2)
-    if len(src) > 0 && len(dest) > 0 {
-      err := copyFile(src, dest)
-      if err != nil {
-        return err
-      }
-    }
-  }
-  return
-}
-
 // return file path if one is more recently modified
 func mostRecentlyModified(file, path1, path2 string) (string, string) {
   src1 := filepath.Join(path1, file)
