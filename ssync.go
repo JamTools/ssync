@@ -65,7 +65,7 @@ func (a *Args) process() {
     }
     sort.Strings(paths)
 
-    otherPath := a.Paths[bool2int(!int2bool(i))]
+    otherPath := a.Paths[1 ^ i]
 
     fmt.Printf("%v\n\n", a.Paths[i])
 

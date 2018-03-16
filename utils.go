@@ -6,20 +6,6 @@ import (
   "log"
 )
 
-func bool2int(b bool) int {
-  if b {
-    return 1
-  }
-  return 0
-}
-
-func int2bool(i int) bool {
-  if i == 0 {
-    return false
-  }
-  return true
-}
-
 func notIn(a, b []string) []string {
   list := make([]string, 0)
 
