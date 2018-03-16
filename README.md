@@ -15,6 +15,20 @@ Positional Args:
   PATH2           2nd directory path
 ```
 
+## Process
+
+1. Looks for hidden file '.ssync-LABEL' within PATH1 or PATH2 which represents last shared state (list of common paths).
+
+2. Compares latest state with current paths within each root path (PATH1, PATH2) to determine:
+
+   * what has been deleted and should be deleted on the opposite path, then deletes.
+
+   * what is new and should be copied to the opposite path, then copies.
+
+3. Compares modified timestamp of each common path to determine more recently modified, then updates on opposite path.
+
+4. Saves shared state file with updated common paths.
+
 ## Developing
 
 ### Install Go on Linux

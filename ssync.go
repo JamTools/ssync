@@ -45,7 +45,7 @@ func (a *Args) process() {
   // check both paths in case one accidentally deleted
   prevList := make([]string, 0)
   for i := range a.Paths {
-    prevList = loadList(filepath.Join(a.Paths[i], fileName))
+    prevList, _ = stringSliceFromFile(filepath.Join(a.Paths[i], fileName))
     if len(prevList) > 0 {
       break
     }
@@ -59,7 +59,12 @@ func (a *Args) process() {
   fmt.Printf("prev: %v\n\n", prevList)
 
   for i := range a.Paths {
-    paths := pathList(a.Paths[i])
+    paths, err := stringSliceFromPathWalk(a.Paths[i])
+    if err != nil {
+      log.Fatalf("%v", err)
+    }
+    sort.Strings(paths)
+
     otherPath := a.Paths[bool2int(!int2bool(i))]
 
     fmt.Printf("%v\n\n", a.Paths[i])
@@ -71,13 +76,11 @@ func (a *Args) process() {
       del := true
       if flagConfirm {
         // ask to confirm deleted
-        del = removeDeleted(deleteList, otherPath, true)
-        fmt.Println()
+        del = deleteConfirm(deleteList, otherPath)
       }
 
       if del {
-        // actually delete
-        _ = removeDeleted(deleteList, otherPath, false)
+        delete(deleteList, otherPath)
       } else {
         // skip delete (add to outList to ask to confirm delete next time)
         outList = append(outList, notIn(outList, deleteList)...)
@@ -88,16 +91,28 @@ func (a *Args) process() {
     if len(newList) > 0 {
       fmt.Printf("new in %s : %v\n\n", otherPath, newList)
 
-      copyNew(newList, a.Paths[i], otherPath)
+      err = create(newList, a.Paths[i], otherPath)
+      if err != nil {
+        log.Fatalf("%v", err)
+      }
     }
   }
 
   // update modified
-  update(prevList, a.Paths[0], a.Paths[1])
+  err := update(prevList, a.Paths[0], a.Paths[1])
+  if err != nil {
+    log.Fatalf("%v", err)
+  }
 
   // append to outList
   for i := range a.Paths {
-    outList = append(outList, notIn(pathList(a.Paths[i]), outList)...)
+    currentPaths, err := stringSliceFromPathWalk(a.Paths[i])
+    if err != nil {
+      log.Fatalf("%v", err)
+    }
+    sort.Strings(currentPaths)
+
+    outList = append(outList, notIn(currentPaths, outList)...)
   }
   sort.Strings(outList)
 
