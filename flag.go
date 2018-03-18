@@ -31,8 +31,8 @@ Options:
 
 var flagConfirm bool
 
-// init: handle flag --help && --version
-func init() {
+// handle flag --help && --version
+func processFlags() {
   // setup options
   var showVersion bool
   flag.BoolVar(&showVersion, "version", false, "prints program version")

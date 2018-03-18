@@ -1,6 +1,7 @@
 package main
 
 import (
+  "os"
   "fmt"
   "sort"
   "log"
@@ -20,7 +21,7 @@ func notIn(a, b []string) []string {
   return list
 }
 
-func askConfirm() bool {
+func askConfirm(in *os.File) bool {
   yesResponses := []string{"y", "Y", "yes", "Yes", "YES"}
   noResponses := []string{"n", "N", "no", "No", "NO"}
 
@@ -34,8 +35,12 @@ func askConfirm() bool {
     return -1
   }
 
+  if in == nil {
+    in = os.Stdin
+  }
+
   var response string
-  _, err := fmt.Scanln(&response)
+  _, err := fmt.Fscan(in, &response)
   if err != nil {
     log.Fatal(err)
   }

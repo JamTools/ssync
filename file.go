@@ -75,7 +75,7 @@ func deleteConfirm(list []string, path string) bool {
 
   if count > 0 {
     fmt.Printf("Confirm delete files? (yes/no) ")
-    return askConfirm()
+    return askConfirm(nil)
   }
 
   return false

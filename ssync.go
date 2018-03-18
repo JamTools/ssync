@@ -20,6 +20,8 @@ type Args struct {
 
 // main package entry
 func main() {
+  processFlags()
+
   a := &Args{ Label: flag.Arg(0), Paths: make([]string, 2),
     In: make([]string, 0), Out: make([]string, 0) }
 
