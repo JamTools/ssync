@@ -71,6 +71,12 @@ The binary will build to the current directory. To test by displaying usage, run
 
     ./ssync --help
 
+### Testing
+
+From within source path, run:
+
+    go test -cover -v ./...
+
 ### Submitting a Pull Request
 
 Fork repo on Github.

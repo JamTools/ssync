@@ -3,9 +3,33 @@ package main
 import (
   "os"
   "io"
+  "sort"
+  "strings"
   "io/ioutil"
   "testing"
 )
+
+func TestNotIn(t *testing.T) {
+  notInTests := [][][]string{
+    { { "abc", "xyz", "123" }, { "abc", "xyz", "123" }, {} },
+    { { "abc", "123" }, { "xyz", "123" }, { "abc" } },
+    { { "xyz", "123" }, { "abc", "123" }, { "xyz" } },
+    { { "abc", "xyz" }, {}, { "abc", "xyz" } },
+    { {}, { "abc", "xyz" }, {} },
+  }
+
+  for _, v := range notInTests {
+    for i := range v {
+      // v[1], v[2] MUST be sorted for binary search
+      sort.Strings(v[i])
+    }
+
+    r := notIn(v[0], v[1])
+    if strings.Join(r, "\n") != strings.Join(v[2], "\n") {
+      t.Errorf("Expected %v, got %v", v[2], r)
+    }
+  }
+}
 
 func testAskConfirm(input string, result bool, t *testing.T) {
   in, err := ioutil.TempFile("", "")
