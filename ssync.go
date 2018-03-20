@@ -79,7 +79,7 @@ func (a *Args) process() {
       del := true
       if flagConfirm {
         // ask to confirm deleted
-        del = deleteConfirm(deleteList, a.Paths[1^i])
+        del = deleteConfirm(deleteList, a.Paths[1^i], nil)
       }
 
       if del {

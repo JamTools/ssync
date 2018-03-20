@@ -55,35 +55,11 @@ func stringSliceFromPathWalk(p string) (paths []string, err error) {
   return
 }
 
-// prompt confirmation before deleting files
-func deleteConfirm(list []string, path string) bool {
-  fmt.Printf("Simulate delete from '%s'...\n", path)
+// check if path exists & exec pathFunction for each iteration
+type pathFunction func(fi os.FileInfo, path string)
 
+func pathsThatExist(list []string, path string, f pathFunction) int {
   count := 0
-  for i := range list {
-    fullpath := filepath.Join(path, list[i])
-
-    _, err := os.Stat(fullpath)
-    if err != nil {
-      continue
-    }
-
-    count += 1
-    fmt.Printf("%s\n", list[i])
-  }
-  fmt.Println()
-
-  if count > 0 {
-    fmt.Printf("Confirm delete files? (yes/no) ")
-    return askConfirm(nil)
-  }
-
-  return false
-}
-
-// remove all paths (dir & file)
-func delete(list []string, path string) {
-  fmt.Printf("Delete from '%s'...\n", path)
 
   for i := range list {
     fullpath := filepath.Join(path, list[i])
@@ -93,15 +69,47 @@ func delete(list []string, path string) {
       continue
     }
 
+    count += 1
     fmt.Printf("%s\n", list[i])
+
+    if f != nil {
+      f(fi, fullpath)
+    }
+  }
+  fmt.Println()
+
+  return count
+}
+
+// prompt confirmation before deleting files
+func deleteConfirm(list []string, path string, in *os.File) bool {
+  fmt.Printf("Simulate delete from '%s'...\n", path)
+
+  result := false
+  count := pathsThatExist(list, path, nil)
+
+  if count > 0 {
+    fmt.Printf("Confirm delete files? (yes/no) ")
+    result = askConfirm(in)
+    fmt.Println()
+  }
+
+  return result
+}
+
+// remove all paths (dir & file)
+func delete(list []string, path string) {
+  fmt.Printf("Delete from '%s'...\n", path)
+
+  _ = pathsThatExist(list, path, func(fi os.FileInfo, fullpath string) {
+    fmt.Printf("%v, %v", fi, fullpath)
 
     if fi.IsDir() {
       os.RemoveAll(fullpath)
     } else {
       os.Remove(fullpath)
     }
-  }
-  fmt.Println()
+  })
 }
 
 // copy new files from srcPath to destPath
