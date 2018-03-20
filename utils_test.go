@@ -36,6 +36,7 @@ func testAskConfirm(input string, result bool, t *testing.T) {
   if err != nil {
     t.Fatal(err)
   }
+  defer os.Remove(in.Name())
   defer in.Close()
 
   _, err = io.WriteString(in, input)

@@ -49,9 +49,10 @@ Append the following, then save/exit:
     export GOPATH=$HOME/go
     export PATH=$PATH:$GOPATH/bin
 
-Source updated profile, run:
+Source updated profile and ensure go $HOME/go exists, run:
 
     source ~/.profile
+    if [ ! -d $HOME/go ]; then mkdir $HOME/go; fi
 
 ### Building
 
@@ -83,7 +84,8 @@ Fork repo on Github.
 
 From within source path, setup new remote, run:
 
-    git remote add myfork git@github.com:$GITHUB-USERNAME/ssync.git
+    gituser='YOUR-GITHUB-USERNAME'
+    git remote add myfork git@github.com:$gituser/ssync.git
 
 Create a new branch to use for development, run:
 
