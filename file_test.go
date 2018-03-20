@@ -107,4 +107,32 @@ func TestStringSliceFromPathWalk(t *testing.T) {
   }
 }
 
+// TestDeleteConfirm & TestDelete fulfill testing of pathsThatExist
+
+func TestDeleteConfirm(t *testing.T) {
+  delPaths := map[string]string{
+    "file1": "file1Contents",
+    "dir1/file2": "file2Contents",
+    "dir1/dir2/file3": "file3Contents",
+  }
+
+  dir := createTestFiles(delPaths, t)
+  defer os.RemoveAll(dir)
+
+  removes := []string{
+    "file1",
+    "dir1/dir2",
+    "extra-does-not-exist-path",
+  }
+
+  in := tmpFile("Y", t)
+  defer os.Remove(in.Name())
+  defer in.Close()
+
+  r := deleteConfirm(removes, dir, in)
+  if r != true {
+    t.Errorf("Expected %v, got %v", true, r)
+  }
+}
+
 // TODO: test copyFile modified timestamp equals
