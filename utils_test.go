@@ -37,14 +37,12 @@ func TestAskConfirm(t *testing.T) {
 
   for result := range askTests {
     for _, v := range askTests[result] {
-      in := tmpFile(v, t)
-      defer os.Remove(in.Name())
-      defer in.Close()
-
-      r := askConfirm(in)
-      if r != result {
-        t.Errorf("Expected %v, got %v", result, r)
-      }
+      tmpFile(t, v, func(in *os.File){
+        r := askConfirm(in)
+        if r != result {
+          t.Errorf("Expected %v, got %v", result, r)
+        }
+      })
     }
   }
 }
