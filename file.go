@@ -102,8 +102,6 @@ func delete(list []string, path string) {
   fmt.Printf("Delete from '%s'...\n", path)
 
   _ = pathsThatExist(list, path, func(fi os.FileInfo, fullpath string) {
-    fmt.Printf("%v, %v", fi, fullpath)
-
     if fi.IsDir() {
       os.RemoveAll(fullpath)
     } else {
@@ -185,5 +183,15 @@ func copyFile(srcPath, destPath string) (err error) {
   }
 
   err = destFile.Sync()
+  if err != nil {
+    return
+  }
+
+  srcInfo, err := srcFile.Stat()
+  if err != nil {
+    return
+  }
+
+  err = os.Chtimes(destFile.Name(), srcInfo.ModTime(), srcInfo.ModTime())
   return
 }
