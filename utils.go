@@ -1,6 +1,7 @@
 package main
 
 import (
+  "io"
   "os"
   "fmt"
   "sort"
@@ -41,7 +42,7 @@ func askConfirm(in *os.File) bool {
 
   var response string
   _, err := fmt.Fscan(in, &response)
-  if err != nil {
+  if err != nil && err != io.EOF {
     log.Fatal(err)
   }
 
