@@ -36,10 +36,6 @@ func askConfirm(in *os.File) bool {
     return -1
   }
 
-  if in == nil {
-    in = os.Stdin
-  }
-
   var response string
   _, err := fmt.Fscan(in, &response)
   if err != nil && err != io.EOF {

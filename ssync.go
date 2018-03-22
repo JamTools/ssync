@@ -19,7 +19,7 @@ type Args struct {
 
 // main package entry
 func main() {
-  args, cont := processFlags(nil)
+  args, cont := processFlags()
   if !cont {
     os.Exit(1)
   }
@@ -86,7 +86,7 @@ func (a *Args) process() {
       del := true
       if flagConfirm {
         // ask to confirm deleted
-        del = deleteConfirm(deleteList, a.Paths[1^i], nil)
+        del = deleteConfirm(deleteList, a.Paths[1^i], os.Stdin)
       }
 
       if del {
