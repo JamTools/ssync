@@ -144,8 +144,8 @@ func TestCopyAll(t *testing.T){
     modTime, _ := time.Parse("2006-01-02", testFiles["file1"][1])
     destFullpath := filepath.Join(destPath, "file1")
     fi, _ := os.Stat(destFullpath)
-    if fi.ModTime() != modTime {
-      t.Errorf("Expected %v, got %v", modTime, fi.ModTime())
+    if fi.ModTime().UTC() != modTime {
+      t.Errorf("Expected %v, got %v", modTime, fi.ModTime().UTC())
     }
   })
 }
