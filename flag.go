@@ -43,15 +43,12 @@ func init() {
     flag.PrintDefaults()
     fmt.Println()
   }
-
-  flag.Parse()
 }
 
 // handle flag --help && --version
-func processFlags(a []string) ([]string, bool) {
-  if a == nil {
-    a = flag.Args()
-  }
+func processFlags() ([]string, bool) {
+  flag.Parse()
+  a := flag.Args()
 
   // --version
   if flagVersion {
