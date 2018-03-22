@@ -103,9 +103,9 @@ func TestDelete(t *testing.T){
   }
 }
 
-type testCreateFunc func(in, out string, ip, op []string)
+type testCopyAllFunc func(in, out string, ip, op []string)
 
-func testCreate(t *testing.T, f testCreateFunc){
+func testCopyAll(t *testing.T, f testCopyAllFunc){
   srcPath := createTestFiles(testFiles, t)
   defer os.RemoveAll(srcPath)
 
@@ -120,7 +120,7 @@ func testCreate(t *testing.T, f testCreateFunc){
   }
   defer os.RemoveAll(destPath)
 
-  err = create(srcPaths, srcPath, destPath)
+  err = copyAll(srcPaths, srcPath, destPath)
   if err != nil {
     t.Fatal(err)
   }
@@ -133,16 +133,25 @@ func testCreate(t *testing.T, f testCreateFunc){
   f(srcPath, destPath, srcPaths, destPaths)
 }
 
-func TestCreate(t *testing.T){
-  testCreate(t, func(srcPath, destPath string, srcPaths, destPaths []string){
+func TestCopyAll(t *testing.T){
+  testCopyAll(t, func(srcPath, destPath string, srcPaths, destPaths []string){
+    // ensure all srcPaths equal destPaths
     if strings.Join(srcPaths, "\n") != strings.Join(destPaths, "\n") {
       t.Errorf("Expected %v, got %v", srcPaths, destPaths)
+    }
+
+    // ensure specified modified timestamp was set
+    modTime, _ := time.Parse("2006-01-02", testFiles["file1"][1])
+    destFullpath := filepath.Join(destPath, "file1")
+    fi, _ := os.Stat(destFullpath)
+    if fi.ModTime() != modTime {
+      t.Errorf("Expected %v, got %v", modTime, fi.ModTime())
     }
   })
 }
 
 func TestMostRecentlyModified(t *testing.T){
-  testCreate(t, func(srcPath, destPath string, srcPaths, destPaths []string){
+  testCopyAll(t, func(srcPath, destPath string, srcPaths, destPaths []string){
 
     // ensure modified timestamp is preserved in copyFile
     a, b := mostRecentlyModified("file1", srcPath, destPath)

@@ -110,8 +110,8 @@ func delete(list []string, path string) {
   })
 }
 
-// copy new files from srcPath to destPath
-func create(paths []string, srcPath, destPath string) (err error) {
+// copy new files & folders from srcPath to destPath
+func copyAll(paths []string, srcPath, destPath string) (err error) {
   for i := range paths {
     fi, err := os.Stat(filepath.Join(srcPath, paths[i]))
     if err != nil {
@@ -165,6 +165,8 @@ func mostRecentlyModified(file, path1, path2 string) (string, string) {
 
 // copy file srcPath to destPath
 func copyFile(srcPath, destPath string) (err error) {
+  fmt.Printf("%s => %s\n", srcPath, destPath)
+
   srcFile, err := os.Open(srcPath)
   if err != nil {
     return
