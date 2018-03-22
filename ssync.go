@@ -7,7 +7,6 @@ import (
   "strings"
   "sort"
   "log"
-  "flag"
   "path/filepath"
 )
 
@@ -20,14 +19,17 @@ type Args struct {
 
 // main package entry
 func main() {
-  processFlags()
+  args, cont := processFlags(nil)
+  if !cont {
+    os.Exit(1)
+  }
 
-  a := &Args{ Label: flag.Arg(0), Paths: make([]string, 2),
+  a := &Args{ Label: args[0], Paths: make([]string, 2),
     In: make([]string, 0), Out: make([]string, 0) }
 
   // check paths exist and are directories
   for x, i := range []int{1, 2} {
-    path := filepath.Clean(flag.Arg(i))
+    path := filepath.Clean(args[i])
 
     fi, err := os.Stat(path)
     if err != nil || !fi.IsDir() {
@@ -39,6 +41,9 @@ func main() {
 
   fmt.Printf("\nLabel: %s\nPath1: %s\nPath2: %s\n\n", 
     a.Label, a.Paths[0], a.Paths[1])
+
+  // TODO: ensure state exists on both paths and is equal
+  // this ensures it wasn't overwritten accidentally with another sync
 
   a.load()
   a.process()
@@ -57,7 +62,9 @@ func (a *Args) load() {
   }
   sort.Strings(a.In)
 
-  fmt.Printf("prev: %v\n\n", a.In)
+  if flagVerbose {
+    fmt.Printf("State: %v\n\n", a.In)
+  }
 }
 
 // delete, copy new
@@ -69,13 +76,13 @@ func (a *Args) process() {
     }
     sort.Strings(paths)
 
-    fmt.Printf("%v\n\n", a.Paths[i])
+    if flagVerbose {
+      fmt.Printf("%v\n\n", a.Paths[i])
+    }
 
     // handle deleted files
     deleteList := notIn(a.In, paths)
     if len(deleteList) > 0 {
-      fmt.Printf("delete from %s : %v\n\n", a.Paths[1^i], deleteList)
-
       del := true
       if flagConfirm {
         // ask to confirm deleted
@@ -93,9 +100,7 @@ func (a *Args) process() {
     // handle new files
     newList := notIn(paths, a.In)
     if len(newList) > 0 {
-      fmt.Printf("new in %s : %v\n\n", a.Paths[1^i], newList)
-
-      err = create(newList, a.Paths[i], a.Paths[1^i])
+      err = copyAll(newList, a.Paths[i], a.Paths[1^i])
       if err != nil {
         log.Fatalf("%v", err)
       }

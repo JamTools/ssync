@@ -1,7 +1,6 @@
 package main
 
 import (
-  "os"
   "fmt"
   "flag"
 )
@@ -29,18 +28,16 @@ Usage: ssync [OPTIONS] LABEL PATH1 PATH2
 Options:
 `
 
-var flagConfirm bool
+var flagConfirm, flagVerbose, flagVersion bool
 
-// handle flag --help && --version
-func processFlags() {
+func init() {
   // setup options
-  var showVersion bool
-  flag.BoolVar(&showVersion, "version", false, "prints program version")
   flag.BoolVar(&flagConfirm, "confirm", false, "confirm before deleting files")
+  flag.BoolVar(&flagVerbose, "v", false, "verbose: print additional output")
+  flag.BoolVar(&flagVersion, "version", false, "prints program version")
 
   // --help
   flag.Usage = func() {
-    // build & print usage
     fmt.Printf(printUsage, version, description, args)
     // print options from built-in flag helper
     flag.PrintDefaults()
@@ -48,16 +45,25 @@ func processFlags() {
   }
 
   flag.Parse()
+}
+
+// handle flag --help && --version
+func processFlags(a []string) ([]string, bool) {
+  if a == nil {
+    a = flag.Args()
+  }
 
   // --version
-  if showVersion {
+  if flagVersion {
     fmt.Printf("%s\n", version)
-    os.Exit(1)
+    return a, false
   }
 
   // show --help unless args
-  if len(flag.Args()) != 3 {
+  if len(a) != 3 {
     flag.Usage()
-    os.Exit(1)
+    return a, false
   }
+
+  return a, true
 }
