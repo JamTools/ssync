@@ -4,10 +4,23 @@ import (
   "os"
   "io"
   "fmt"
-  "strings"
+  "sort"
   "bufio"
+  "strings"
   "path/filepath"
 )
+
+// check if path is directory
+func checkDir(path string) (string, error) {
+  path = filepath.Clean(path)
+
+  fi, err := os.Stat(path)
+  if err != nil || !fi.IsDir() {
+    return path, fmt.Errorf("'%s' is not a directory", path)
+  }
+
+  return path, nil
+}
 
 // read text file by newline into string slice
 func stringSliceFromFile(path string) (lines []string, err error) {
@@ -33,6 +46,7 @@ func stringSliceFromFile(path string) (lines []string, err error) {
     }
   }
 
+  sort.Strings(lines)
   return
 }
 
@@ -52,6 +66,7 @@ func stringSliceFromPathWalk(p string) (paths []string, err error) {
   }
 
   err = filepath.Walk(p, walkFunc)
+  sort.Strings(paths)
   return
 }
 
@@ -76,20 +91,19 @@ func pathsThatExist(list []string, path string, f pathFunction) int {
       f(fi, fullpath)
     }
   }
-  fmt.Println()
 
   return count
 }
 
 // prompt confirmation before deleting files
 func deleteConfirm(list []string, path string, in *os.File) bool {
-  fmt.Printf("Simulate delete from '%s'...\n", path)
+  fmt.Printf("\nSimulate delete from '%s'...\n", path)
 
   result := false
   count := pathsThatExist(list, path, nil)
 
   if count > 0 {
-    fmt.Printf("Confirm delete files? (yes/no) ")
+    fmt.Printf("\nConfirm delete files? (yes/no) ")
     result = askConfirm(in)
     fmt.Println()
   }
@@ -99,7 +113,7 @@ func deleteConfirm(list []string, path string, in *os.File) bool {
 
 // remove all paths (dir & file)
 func delete(list []string, path string) {
-  fmt.Printf("Delete from '%s'...\n", path)
+  fmt.Printf("\nDelete from '%s'...\n", path)
 
   _ = pathsThatExist(list, path, func(fi os.FileInfo, fullpath string) {
     if fi.IsDir() {
@@ -165,13 +179,26 @@ func mostRecentlyModified(file, path1, path2 string) (string, string) {
 
 // copy file srcPath to destPath
 func copyFile(srcPath, destPath string) (err error) {
-  fmt.Printf("%s => %s\n", srcPath, destPath)
-
   srcFile, err := os.Open(srcPath)
   if err != nil {
     return
   }
   defer srcFile.Close()
+
+  srcInfo, err := srcFile.Stat()
+  if err != nil {
+    return
+  }
+
+  destInfo, err := os.Stat(destPath)
+  if err == nil {
+    // only copy if srcPath more recently modified
+    if srcInfo.ModTime().Unix() <= destInfo.ModTime().Unix() {
+      return
+    }
+  }
+
+  fmt.Printf("%s => %s\n", srcPath, destPath)
 
   destFile, err := os.Create(destPath)
   if err != nil {
@@ -185,11 +212,6 @@ func copyFile(srcPath, destPath string) (err error) {
   }
 
   err = destFile.Sync()
-  if err != nil {
-    return
-  }
-
-  srcInfo, err := srcFile.Stat()
   if err != nil {
     return
   }
