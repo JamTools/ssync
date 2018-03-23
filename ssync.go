@@ -24,76 +24,94 @@ func main() {
     os.Exit(1)
   }
 
-  a := &Args{ Label: args[0], Paths: make([]string, 2),
+  if err := exec(args, os.Stdin); err != nil {
+    log.Fatalf("%v", err)
+  }
+}
+
+// main process
+func exec(args []string, in *os.File) error {
+  a := &Args{ Label: args[0], Paths: []string{args[1], args[2]},
     In: make([]string, 0), Out: make([]string, 0) }
 
   // check paths exist and are directories
-  for x, i := range []int{1, 2} {
-    path := filepath.Clean(args[i])
-
-    fi, err := os.Stat(path)
-    if err != nil || !fi.IsDir() {
-      log.Fatalf("'%s' is not a directory", path)
+  for x := range a.Paths {
+    p, err := checkDir(a.Paths[x])
+    if err != nil {
+      return err
     }
-
-    a.Paths[x] = path
+    a.Paths[x] = p
   }
 
-  fmt.Printf("\nLabel: %s\nPath1: %s\nPath2: %s\n\n", 
+  fmt.Printf("\nLabel: %s\nPath1: %s\nPath2: %s\n", 
     a.Label, a.Paths[0], a.Paths[1])
 
-  // TODO: ensure state exists on both paths and is equal
-  // this ensures it wasn't overwritten accidentally with another sync
+  err := a.loadState()
+  if err != nil {
+    return err
+  }
 
-  a.load()
-  a.process()
-  a.update()
-  a.save()
+  err = a.process(in)
+  if err != nil {
+    return err
+  }
+
+  err = a.saveState()
+  if err != nil {
+    return err
+  }
+
+  fmt.Printf("\nssync completed\n")
+  return nil
 }
 
-// load previous paths from file: $path/.ssync-$label
-// check both paths in case one accidentally deleted
-func (a *Args) load() {
-  for i := range a.Paths {
-    a.In, _ = stringSliceFromFile(filepath.Join(a.Paths[i], ".ssync-" + a.Label))
-    if len(a.In) > 0 {
-      break
-    }
-  }
-  sort.Strings(a.In)
+// load previous state
+func (a *Args) loadState() error {
+  l := ".ssync-" + a.Label
+  s1, _ := stringSliceFromFile(filepath.Join(a.Paths[0], l))
+  s2, _ := stringSliceFromFile(filepath.Join(a.Paths[1], l))
 
-  if flagVerbose {
-    fmt.Printf("State: %v\n\n", a.In)
+  // new state
+  if len(s1) == 0 && len(s2) == 0 {
+    return nil
   }
+
+  // ensure states are equal (avoid accidental overwrite with another sync)
+  if strings.Join(s1, "\n") == strings.Join(s2, "\n") {
+    a.In = s1
+    return nil
+  }
+
+  // handle unequal states
+  return fmt.Errorf("shared state unequal")
 }
 
-// delete, copy new
-func (a *Args) process() {
+// delete, copy new, update
+func (a *Args) process(in *os.File) error {
   for i := range a.Paths {
     paths, err := stringSliceFromPathWalk(a.Paths[i])
     if err != nil {
-      log.Fatalf("%v", err)
+      return err
     }
-    sort.Strings(paths)
 
-    if flagVerbose {
-      fmt.Printf("%v\n\n", a.Paths[i])
-    }
+    fmt.Printf("\nProcessing: %v\n", a.Paths[i])
 
     // handle deleted files
-    deleteList := notIn(a.In, paths)
-    if len(deleteList) > 0 {
-      del := true
-      if flagConfirm {
-        // ask to confirm deleted
-        del = deleteConfirm(deleteList, a.Paths[1^i], os.Stdin)
-      }
+    if len(a.In) > 0 {
+      deleteList := notIn(a.In, paths)
+      if len(deleteList) > 0 {
+        del := true
+        if flagConfirm {
+          // ask to confirm deleted
+          del = deleteConfirm(deleteList, a.Paths[1^i], in)
+        }
 
-      if del {
-        delete(deleteList, a.Paths[1^i])
-      } else {
-        // skip delete (add to a.Out to ask to confirm delete next time)
-        a.Out = append(a.Out, notIn(a.Out, deleteList)...)
+        if del {
+          delete(deleteList, a.Paths[1^i])
+        } else {
+          // skip delete (add to a.Out to ask to confirm delete next time)
+          a.Out = append(a.Out, notIn(a.Out, deleteList)...)
+        }
       }
     }
 
@@ -102,32 +120,32 @@ func (a *Args) process() {
     if len(newList) > 0 {
       err = copyAll(newList, a.Paths[i], a.Paths[1^i])
       if err != nil {
-        log.Fatalf("%v", err)
+        return err
       }
     }
   }
-}
 
-// update common files if one is more recently updated
-func (a *Args) update() {
+  // update common files if one is more recently updated
   for i := range a.In {
     src, dest := mostRecentlyModified(a.In[i], a.Paths[0], a.Paths[1])
     if len(src) > 0 && len(dest) > 0 {
       err := copyFile(src, dest)
       if err != nil {
-        log.Fatalf("%v", err)
+        return err
       }
     }
   }
+
+  return nil
 }
 
 // append and save updated paths to: $path/.ssync-$label
-func (a *Args) save() {
+func (a *Args) saveState() error {
   // append to a.Out
   for i := range a.Paths {
     paths, err := stringSliceFromPathWalk(a.Paths[i])
     if err != nil {
-      log.Fatalf("%v", err)
+      return err
     }
 
     a.Out = append(a.Out, notIn(paths, a.Out)...)
@@ -135,11 +153,14 @@ func (a *Args) save() {
   }
 
   // write a.Out to file
+  l := ".ssync-" + a.Label
   d1 := []byte(strings.Join(a.Out, "\n")+"\n")
   for i := range a.Paths {
-    err := ioutil.WriteFile(filepath.Join(a.Paths[i], ".ssync-" + a.Label), d1, 0644)
+    err := ioutil.WriteFile(filepath.Join(a.Paths[i], l), d1, 0644)
     if err != nil {
-      log.Fatalf("%v", err)
+      return err
     }
   }
+
+  return nil
 }
