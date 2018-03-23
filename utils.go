@@ -42,6 +42,9 @@ func askConfirm(in *os.File) bool {
     log.Fatal(err)
   }
 
+  // reset seek to beginning of file
+  _, _ = in.Seek(0, os.SEEK_SET)
+
   if posString(yesResponses, response) >= 0 {
     return true
   } else if posString(noResponses, response) >= 0 {
