@@ -9,6 +9,28 @@ import (
   "path/filepath"
 )
 
+func TestCheckDirInvalid(t *testing.T) {
+  tmpFile(t, "", func(in *os.File){
+    _, err := checkDir(in.Name())
+    if err == nil {
+      t.Errorf("Expected error, got nil")
+    }
+  })
+}
+
+func TestCheckDir(t *testing.T) {
+  td, err := ioutil.TempDir("", "")
+  if err != nil {
+    t.Fatal(err)
+  }
+  defer os.RemoveAll(td)
+
+  _, err = checkDir(td)
+  if err != nil {
+    t.Errorf("Expected nil, got %v", err)
+  }
+}
+
 func TestStringSliceFromFileNotExist(t *testing.T) {
   _, err := stringSliceFromFile(".ssync-this-file-does-not-exist")
   if err == nil {
@@ -18,7 +40,7 @@ func TestStringSliceFromFileNotExist(t *testing.T) {
 
 func TestStringSliceFromFile(t *testing.T) {
   sliceTests := []map[string][]string{
-    { "hello\nworld\n!\n": { "hello", "world", "!" } },
+    { "hello\nworld\n!\n": { "!", "hello", "world" } },
     { "\n\n  \n0 \n": { "0" } },
   }
 
