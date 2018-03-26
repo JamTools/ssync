@@ -28,13 +28,12 @@ Usage: ssync [OPTIONS] LABEL PATH1 PATH2
 Options:
 `
 
-var flagConfirm, flagVerbose, flagVersion bool
+var flagConfirm, flagVersion bool
 
 func init() {
   // setup options
   flag.BoolVar(&flagConfirm, "confirm", false, "confirm before deleting files")
-  flag.BoolVar(&flagVerbose, "v", false, "verbose: print additional output")
-  flag.BoolVar(&flagVersion, "version", false, "prints program version")
+  flag.BoolVar(&flagVersion, "version", false, "print program version, then exit")
 
   // --help
   flag.Usage = func() {

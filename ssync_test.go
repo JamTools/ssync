@@ -218,10 +218,8 @@ func testExecUpdate(t *testing.T, path1, path2 string) {
 }
 
 func TestExec(t *testing.T) {
-  flagVerbose = true
   flagConfirm = true
   defer func() {
-    flagVerbose = false
     flagConfirm = false
   }()
 
