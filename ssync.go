@@ -61,7 +61,7 @@ func exec(args []string, in *os.File) error {
     return err
   }
 
-  fmt.Printf("\nssync completed\n")
+  fmt.Printf("\nssync finished.\n")
   return nil
 }
 
@@ -71,19 +71,14 @@ func (a *Args) loadState() error {
   s1, _ := stringSliceFromFile(filepath.Join(a.Paths[0], l))
   s2, _ := stringSliceFromFile(filepath.Join(a.Paths[1], l))
 
-  // new state
-  if len(s1) == 0 && len(s2) == 0 {
-    return nil
+  // ensure states are equal
+  // error indicates accidental overwrite with another sync
+  if strings.Join(s1, "\n") != strings.Join(s2, "\n") {
+    return fmt.Errorf("shared state unequal")
   }
 
-  // ensure states are equal (avoid accidental overwrite with another sync)
-  if strings.Join(s1, "\n") == strings.Join(s2, "\n") {
-    a.In = s1
-    return nil
-  }
-
-  // handle unequal states
-  return fmt.Errorf("shared state unequal")
+  a.In = s1
+  return nil
 }
 
 // delete, copy new, update
@@ -139,7 +134,7 @@ func (a *Args) process(in *os.File) error {
   return nil
 }
 
-// append and save updated paths to: $path/.ssync-$label
+// save shared state to file
 func (a *Args) saveState() error {
   // append to a.Out
   for i := range a.Paths {
@@ -152,7 +147,7 @@ func (a *Args) saveState() error {
     sort.Strings(a.Out)
   }
 
-  // write a.Out to file
+  // write a.Out state to file
   l := ".ssync-" + a.Label
   d1 := []byte(strings.Join(a.Out, "\n")+"\n")
   for i := range a.Paths {
