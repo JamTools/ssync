@@ -1,8 +1,12 @@
 # ssync
 
-Synchronize files between two paths.
+Synchronize files between two paths by comparing modified timestamps.
 
-On subsequent use, it removes files intentionally deleted from one path on the other.
+On subsequent use, using a shared state file, remove files intentionally deleted from one path on the other.
+
+This is useful for a large music collection shared among a group of people, where individuals periodically change the collection by finding a better source and replacing, editing id3 tags to provide more accurate data, embedding artwork within audio files, deleting low quality recordings, etc.
+
+Individuals can sync with multiple other individuals. Every two individuals have a shared state file. The latest shared state propagates across all individuals over time.
 
 ## Usage
 
@@ -13,13 +17,19 @@ Positional Args:
   LABEL           give label for subsequent use
   PATH1           1st directory path
   PATH2           2nd directory path
+
+Options:
+  -confirm
+      confirm before deleting files
+  -version
+      print program version, then exit
 ```
 
 ## Process
 
-1. Looks for hidden file '.ssync-LABEL' within PATH1 or PATH2 which represents last shared state (list of common paths).
+1. Looks for state file '.ssync-LABEL' within root of PATH1 and PATH2 which contains list of common paths.
 
-2. Compares latest state with current paths within each root path (PATH1, PATH2) to determine:
+2. Compares latest state with current paths within each of PATH1 and PATH2 to determine:
 
    * what has been deleted and should be deleted on the opposite path, then deletes.
 
@@ -27,7 +37,7 @@ Positional Args:
 
 3. Compares modified timestamp of each common path to determine more recently modified, then updates on opposite path.
 
-4. Saves shared state file with updated common paths.
+4. Saves updated state to file on both paths.
 
 ## Developing
 
