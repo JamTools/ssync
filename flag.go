@@ -7,7 +7,7 @@ import (
 
 const (
   version = "0.0.1"
-  description = "smart syncs files between two paths"
+  description = "Synchronize audio collection among group of individuals"
 )
 
 // positional args template
