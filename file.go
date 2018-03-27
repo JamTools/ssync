@@ -135,10 +135,7 @@ func copyAll(paths []string, srcPath, destPath string) (err error) {
     if fi.IsDir() {
       err = os.MkdirAll(filepath.Join(destPath, paths[i]), 0777)
     } else {
-      err = copyFile(
-        filepath.Join(srcPath, paths[i]),
-        filepath.Join(destPath, paths[i]),
-      )
+      err = copyFile(paths[i], srcPath, destPath)
     }
 
     if err != nil {
@@ -151,15 +148,12 @@ func copyAll(paths []string, srcPath, destPath string) (err error) {
 
 // return file path if one is more recently modified
 func mostRecentlyModified(file, path1, path2 string) (string, string) {
-  src1 := filepath.Join(path1, file)
-  src2 := filepath.Join(path2, file)
-
-  fi1, err := os.Stat(src1)
+  fi1, err := os.Stat(filepath.Join(path1, file))
   if err != nil || fi1.IsDir() {
     return "", ""
   }
 
-  fi2, err := os.Stat(src2)
+  fi2, err := os.Stat(filepath.Join(path2, file))
   if err != nil || fi2.IsDir() {
     return "", ""
   }
@@ -167,18 +161,18 @@ func mostRecentlyModified(file, path1, path2 string) (string, string) {
   // compared modified times
   if fi1.ModTime().Unix() > fi2.ModTime().Unix() {
     // update on path2
-    return src1, src2
+    return path1, path2
   } else if fi2.ModTime().Unix() > fi1.ModTime().Unix() {
     // update on path1
-    return src2, src1
+    return path2, path1
   }
 
   return "", ""
 }
 
 // copy file srcPath to destPath
-func copyFile(srcPath, destPath string) (err error) {
-  srcFile, err := os.Open(srcPath)
+func copyFile(file, srcPath, destPath string) (err error) {
+  srcFile, err := os.Open(filepath.Join(srcPath, file))
   if err != nil {
     return
   }
@@ -189,7 +183,9 @@ func copyFile(srcPath, destPath string) (err error) {
     return
   }
 
-  destInfo, err := os.Stat(destPath)
+  destFullpath := filepath.Join(destPath, file)
+
+  destInfo, err := os.Stat(destFullpath)
   if err == nil {
     // only copy if srcPath more recently modified
     if srcInfo.ModTime().Unix() <= destInfo.ModTime().Unix() {
@@ -197,9 +193,9 @@ func copyFile(srcPath, destPath string) (err error) {
     }
   }
 
-  fmt.Printf("%s => %s\n", srcPath, destPath)
+  fmt.Printf("%s\n", file)
 
-  destFile, err := os.Create(destPath)
+  destFile, err := os.Create(destFullpath)
   if err != nil {
     return
   }

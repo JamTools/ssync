@@ -196,8 +196,8 @@ func TestMostRecentlyModified(t *testing.T){
     }
 
     a, b = mostRecentlyModified("dir1/file2", srcPath, destPath)
-    if a != srcFullpath {
-      t.Errorf("Expected %v, got %v", srcFullpath, a)
+    if a != srcPath {
+      t.Errorf("Expected %v, got %v", srcPath, a)
     }
 
     // ensure when destPath most recently modified
@@ -207,8 +207,8 @@ func TestMostRecentlyModified(t *testing.T){
     }
 
     a, b = mostRecentlyModified("dir1/dir2/file3", srcPath, destPath)
-    if a != destFullpath {
-      t.Errorf("Expected %v, got %v", destFullpath, a)
+    if a != destPath {
+      t.Errorf("Expected %v, got %v", destPath, a)
     }
   })
 }
