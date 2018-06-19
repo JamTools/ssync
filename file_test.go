@@ -212,3 +212,23 @@ func TestMostRecentlyModified(t *testing.T){
     }
   })
 }
+
+func TestMostRecentlyModifiedOverride(t *testing.T){
+  flagForcePath = 1
+  testCopyAll(t, func(srcPath, destPath string, srcPaths, destPaths []string){
+    a, _ := mostRecentlyModified("dir1/dir2/file3", srcPath, destPath)
+    if a != srcPath {
+      t.Errorf("Expected %v, got %v", srcPath, a)
+    }
+  })
+
+  flagForcePath = 2
+  testCopyAll(t, func(srcPath, destPath string, srcPaths, destPaths []string){
+    a, _ := mostRecentlyModified("file1", srcPath, destPath)
+    if a != destPath {
+      t.Errorf("Expected %v, got %v", destPath, a)
+    }
+  })
+
+  flagForcePath = 0
+}

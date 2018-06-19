@@ -28,10 +28,13 @@ Usage: ssync [OPTIONS] LABEL PATH1 PATH2
 Options:
 `
 
+var flagForcePath int
 var flagConfirm, flagVersion bool
 
 func init() {
   // setup options
+  flag.IntVar(&flagForcePath, "force", 0, "update modified using this path regardless" +
+    " of modified timestamp (0=timestamp, 1=PATH1, 2=PATH2)")
   flag.BoolVar(&flagConfirm, "confirm", false, "confirm before deleting files")
   flag.BoolVar(&flagVersion, "version", false, "print program version, then exit")
 

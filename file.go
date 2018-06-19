@@ -126,16 +126,21 @@ func delete(list []string, path string) {
 // copy new files & folders from srcPath to destPath
 func copyAll(paths []string, srcPath, destPath string) (err error) {
   for i := range paths {
+    // skip path if error while reading
     fi, err := os.Stat(filepath.Join(srcPath, paths[i]))
     if err != nil {
-      // skip path if error while reading
       continue
     }
 
     if fi.IsDir() {
       err = os.MkdirAll(filepath.Join(destPath, paths[i]), 0777)
     } else {
-      err = copyFile(paths[i], srcPath, destPath)
+      src, dest := mostRecentlyModified(paths[i], srcPath, destPath)
+
+      // only copy if dne or more recently modified
+      if src == srcPath || (len(src) == 0 && len(dest) == 0) {
+        err = copyFile(paths[i], srcPath, destPath)
+      }
     }
 
     if err != nil {
@@ -158,6 +163,14 @@ func mostRecentlyModified(file, path1, path2 string) (string, string) {
     return "", ""
   }
 
+  // override flag option
+  switch flagForcePath {
+  case 1:
+    return path1, path2
+  case 2:
+    return path2, path1
+  }
+
   // compared modified times
   if fi1.ModTime().Unix() > fi2.ModTime().Unix() {
     // update on path2
@@ -167,6 +180,7 @@ func mostRecentlyModified(file, path1, path2 string) (string, string) {
     return path2, path1
   }
 
+  // equal, do nothing
   return "", ""
 }
 
@@ -183,17 +197,9 @@ func copyFile(file, srcPath, destPath string) (err error) {
     return
   }
 
-  destFullpath := filepath.Join(destPath, file)
-
-  destInfo, err := os.Stat(destFullpath)
-  if err == nil {
-    // only copy if srcPath more recently modified
-    if srcInfo.ModTime().Unix() <= destInfo.ModTime().Unix() {
-      return
-    }
-  }
-
   fmt.Printf("%s\n", file)
+
+  destFullpath := filepath.Join(destPath, file)
 
   destFile, err := os.Create(destFullpath)
   if err != nil {
