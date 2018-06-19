@@ -125,13 +125,13 @@ func testExecInitial(t *testing.T, path1, path2 string) {
   // check file1 overwritten on path2
   c, _ := ioutil.ReadFile(filepath.Join(path2, "file1"))
   if string(c) != "file1Contents" {
-    t.Errorf("Expected %v, got %v", "file1Contents", c)
+    t.Errorf("Expected %v, got %v", "file1Contents", string(c))
   }
 
   // check dir1/dir2/file3 overwritten on path1
   c, _ = ioutil.ReadFile(filepath.Join(path1, "dir1", "dir2", "file3"))
   if string(c) != "file3Contents2" {
-    t.Errorf("Expected %v, got %v", "file3Contents2", c)
+    t.Errorf("Expected %v, got %v", "file3Contents2", string(c))
   }
 
   // check saved state equals result on both paths
