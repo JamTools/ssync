@@ -21,6 +21,8 @@ Positional Args:
 Options:
   -confirm
       confirm before deleting files
+  -force int
+      update modified using this path regardless of modified timestamp (0=timestamp, 1=PATH1, 2=PATH2)
   -version
       print program version, then exit
 ```
