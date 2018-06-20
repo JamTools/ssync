@@ -124,8 +124,8 @@ func (a *Args) process(in *os.File) error {
   // update common files if one is more recently updated
   fmt.Printf("\nUpdate modified:\n")
   for i := range a.In {
-    src, dest := mostRecentlyModified(a.In[i], a.Paths[0], a.Paths[1])
-    if len(src) > 0 && len(dest) > 0 {
+    src, dest, found := mostRecentlyModified(a.In[i], a.Paths[0], a.Paths[1])
+    if found && len(src) > 0 && len(dest) > 0 {
       err := copyFile(a.In[i], src, dest)
       if err != nil {
         return err
