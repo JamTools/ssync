@@ -132,56 +132,65 @@ func copyAll(paths []string, srcPath, destPath string) (err error) {
       continue
     }
 
-    if fi.IsDir() {
-      err = os.MkdirAll(filepath.Join(destPath, paths[i]), 0777)
-    } else {
-      src, dest := mostRecentlyModified(paths[i], srcPath, destPath)
-
-      // only copy if dne or more recently modified
-      if src == srcPath || (len(src) == 0 && len(dest) == 0) {
-        err = copyFile(paths[i], srcPath, destPath)
-      }
+    // ensure dir created on dest
+    destDir := filepath.Dir(filepath.Join(destPath, paths[i]))
+    err = os.MkdirAll(destDir, 0777)
+    if err != nil {
+      return err
     }
 
-    if err != nil {
-      // return any error while writing
-      return err
+    // continue of path is directory
+    if fi.IsDir() {
+      continue
+    }
+
+    src, _, found := mostRecentlyModified(paths[i], srcPath, destPath)
+
+    // only copy if dne or srcPath more recently modified
+    if !found || src == srcPath {
+      err = copyFile(paths[i], srcPath, destPath)
+      if err != nil {
+        return err
+      }
     }
   }
   return
 }
 
 // return file path if one is more recently modified
-func mostRecentlyModified(file, path1, path2 string) (string, string) {
+func mostRecentlyModified(file, path1, path2 string) (string, string, bool) {
   fi1, err := os.Stat(filepath.Join(path1, file))
   if err != nil || fi1.IsDir() {
-    return "", ""
+    return "", "", false
   }
 
   fi2, err := os.Stat(filepath.Join(path2, file))
   if err != nil || fi2.IsDir() {
-    return "", ""
+    return "", "", false
   }
 
-  // override flag option
-  switch flagForcePath {
-  case 1:
-    return path1, path2
-  case 2:
-    return path2, path1
+  // modified timestamp not equal
+  if fi1.ModTime().Unix() != fi2.ModTime().Unix() {
+    // override flag option
+    switch flagForcePath {
+    case 1:
+      return path1, path2, true
+    case 2:
+      return path2, path1, true
+    }
+
+    // compared modified times
+    if fi1.ModTime().Unix() > fi2.ModTime().Unix() {
+      // update on path2
+      return path1, path2, true
+    } else if fi2.ModTime().Unix() > fi1.ModTime().Unix() {
+      // update on path1
+      return path2, path1, true
+    }
   }
 
-  // compared modified times
-  if fi1.ModTime().Unix() > fi2.ModTime().Unix() {
-    // update on path2
-    return path1, path2
-  } else if fi2.ModTime().Unix() > fi1.ModTime().Unix() {
-    // update on path1
-    return path2, path1
-  }
-
-  // equal, do nothing
-  return "", ""
+  // modified timestamp equal
+  return "", "", true
 }
 
 // copy file srcPath to destPath
