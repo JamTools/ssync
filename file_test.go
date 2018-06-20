@@ -176,13 +176,13 @@ func TestMostRecentlyModified(t *testing.T){
   testCopyAll(t, func(srcPath, destPath string, srcPaths, destPaths []string){
 
     // ensure modified timestamp is preserved in copyFile
-    a, b := mostRecentlyModified("file1", srcPath, destPath)
+    a, b, _ := mostRecentlyModified("file1", srcPath, destPath)
     if a != "" || b != "" {
       t.Errorf("Expected equal timestamps")
     }
 
     // ensure blank when checking directory
-    a, b = mostRecentlyModified("dir1", srcPath, destPath)
+    a, b, _ = mostRecentlyModified("dir1", srcPath, destPath)
     if a != "" || b != "" {
       t.Errorf("Expected blank timestamps for directory")
     }
@@ -195,7 +195,7 @@ func TestMostRecentlyModified(t *testing.T){
       t.Fatal(err)
     }
 
-    a, b = mostRecentlyModified("dir1/file2", srcPath, destPath)
+    a, b, _ = mostRecentlyModified("dir1/file2", srcPath, destPath)
     if a != srcPath {
       t.Errorf("Expected %v, got %v", srcPath, a)
     }
@@ -206,7 +206,7 @@ func TestMostRecentlyModified(t *testing.T){
       t.Fatal(err)
     }
 
-    a, b = mostRecentlyModified("dir1/dir2/file3", srcPath, destPath)
+    a, b, _ = mostRecentlyModified("dir1/dir2/file3", srcPath, destPath)
     if a != destPath {
       t.Errorf("Expected %v, got %v", destPath, a)
     }
@@ -214,21 +214,23 @@ func TestMostRecentlyModified(t *testing.T){
 }
 
 func TestMostRecentlyModifiedOverride(t *testing.T){
+  srcPath := createTestFiles(testFiles, t)
+  defer os.RemoveAll(srcPath)
+
+  destPath := createTestFiles(testFiles2, t)
+  defer os.RemoveAll(destPath)
+
   flagForcePath = 1
-  testCopyAll(t, func(srcPath, destPath string, srcPaths, destPaths []string){
-    a, _ := mostRecentlyModified("dir1/dir2/file3", srcPath, destPath)
-    if a != srcPath {
-      t.Errorf("Expected %v, got %v", srcPath, a)
-    }
-  })
+  a, _, _ := mostRecentlyModified("dir1/dir2/file3", srcPath, destPath)
+  if a != srcPath {
+    t.Errorf("Expected %v, got %v", srcPath, a)
+  }
 
   flagForcePath = 2
-  testCopyAll(t, func(srcPath, destPath string, srcPaths, destPaths []string){
-    a, _ := mostRecentlyModified("file1", srcPath, destPath)
-    if a != destPath {
-      t.Errorf("Expected %v, got %v", destPath, a)
-    }
-  })
+  b, _, _ := mostRecentlyModified("file1", srcPath, destPath)
+  if b != destPath {
+    t.Errorf("Expected %v, got %v", destPath, b)
+  }
 
   flagForcePath = 0
 }
