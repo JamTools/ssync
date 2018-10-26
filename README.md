@@ -70,11 +70,11 @@ Source updated profile and ensure go $HOME/go exists, run:
 
 Get latest source, run:
 
-    go get github.com/JamTools/ssync
+    go get github.com/jamlib/ssync
 
 Navigate to source path, run:
 
-    cd $GOPATH/src/github.com/JamTools/ssync
+    cd $GOPATH/src/github.com/jamlib/ssync
 
 From within source path, run:
 
