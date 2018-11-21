@@ -58,6 +58,7 @@ func TestStringSliceFromFile(t *testing.T) {
 
 func TestStringSliceFromPathWalk(t *testing.T) {
   result := []string{
+    ".ssync-test",
     "dir1",
     "dir1/dir2",
     "dir1/dir2/file3",
@@ -65,7 +66,7 @@ func TestStringSliceFromPathWalk(t *testing.T) {
     "file1",
   }
 
-  dir := createTestFiles(testFiles, t)
+  dir, _ := createTestFiles(t, testFiles)
   defer os.RemoveAll(dir)
 
   paths, err := stringSliceFromPathWalk(dir)
@@ -81,7 +82,7 @@ func TestStringSliceFromPathWalk(t *testing.T) {
 // TestDeleteConfirm & TestDelete also fulfill testing of pathsThatExist
 
 func TestDeleteConfirm(t *testing.T) {
-  dir := createTestFiles(testFiles, t)
+  dir, _ := createTestFiles(t, testFiles)
   defer os.RemoveAll(dir)
 
   removes := []string{
@@ -107,7 +108,7 @@ func TestDeleteConfirm(t *testing.T) {
 }
 
 func TestDelete(t *testing.T){
-  dir := createTestFiles(testFiles, t)
+  dir, _ := createTestFiles(t, testFiles)
   defer os.RemoveAll(dir)
 
   removes := []string{
@@ -128,7 +129,7 @@ func TestDelete(t *testing.T){
 type testCopyAllFunc func(in, out string, ip, op []string)
 
 func testCopyAll(t *testing.T, f testCopyAllFunc){
-  srcPath := createTestFiles(testFiles, t)
+  srcPath, _ := createTestFiles(t, testFiles)
   defer os.RemoveAll(srcPath)
 
   srcPaths, err := stringSliceFromPathWalk(srcPath)
@@ -163,7 +164,7 @@ func TestCopyAll(t *testing.T){
     }
 
     // ensure specified modified timestamp was set
-    modTime, _ := time.Parse("2006-01-02", testFiles["file1"][1])
+    modTime, _ := time.Parse("2006-01-02", testFiles[1].Date)
     destFullpath := filepath.Join(destPath, "file1")
     fi, _ := os.Stat(destFullpath)
     if fi.ModTime().UTC() != modTime {
@@ -214,10 +215,10 @@ func TestMostRecentlyModified(t *testing.T){
 }
 
 func TestMostRecentlyModifiedOverride(t *testing.T){
-  srcPath := createTestFiles(testFiles, t)
+  srcPath, _ := createTestFiles(t, testFiles)
   defer os.RemoveAll(srcPath)
 
-  destPath := createTestFiles(testFiles2, t)
+  destPath, _ := createTestFiles(t, testFiles2)
   defer os.RemoveAll(destPath)
 
   flagForcePath = 1
@@ -233,4 +234,42 @@ func TestMostRecentlyModifiedOverride(t *testing.T){
   }
 
   flagForcePath = 0
+}
+
+func TestRenameFolder(t *testing.T) {
+  testFiles := []*TestFile{
+    {"dir1/file1", "abcde", ""},
+    {"dir2/file2", "a", ""},
+    {"dir3/file3", "", ""},
+    {"dir4/file4", "", ""},
+    {"dir6/file6", "", ""},
+  }
+
+  dir, _ := createTestFiles(t, testFiles)
+  defer os.RemoveAll(dir)
+
+  tests := [][]string{
+    {"dir2", "dir1", "dir1 (1)"},
+    {"dir3", "dir1", "dir1 (2)"},
+    {"dir4", "dir5", "dir5"},
+    {"dir6", "path2/dir5", "path2/dir5"},
+  }
+
+  for i := 0; i < len(tests); i++ {
+    r, err := RenameFolder(filepath.Join(dir, tests[i][0]), filepath.Join(dir, tests[i][1]))
+    if err != nil {
+      t.Errorf("Unexpected error %v", err.Error())
+    }
+
+    exp := filepath.Join(dir, tests[i][2])
+    if r != exp {
+      t.Errorf("Expected %v, got %v", exp, r)
+    }
+  }
+
+  // test dest parent folder os.MkdirAll error
+  _, err := RenameFolder("/notfound", "/not/found")
+  if err == nil {
+    t.Errorf("Expected error from os.MkdirAll")
+  }
 }
