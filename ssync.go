@@ -83,6 +83,8 @@ func (a *Args) loadState() error {
 
 // delete, copy new, update
 func (a *Args) process(in *os.File) error {
+  newList := make([][]string, 2)
+
   for i := range a.Paths {
     paths, err := stringSliceFromPathWalk(a.Paths[i])
     if err != nil {
@@ -110,23 +112,35 @@ func (a *Args) process(in *os.File) error {
       }
     }
 
-    // handle new files
-    newList := notIn(paths, a.In)
-    if len(newList) > 0 {
-      fmt.Printf("\nCopy new files to: %v\n", a.Paths[1^i])
-      err = copyAll(newList, a.Paths[i], a.Paths[1^i])
-      if err != nil {
-        return err
+    // save new files
+    newList[i] = notIn(paths, a.In)
+  }
+
+  // update common files if one is more recently updated
+  if len(a.In) > 0 {
+    fmt.Printf("\nUpdate modified:\n")
+    for i := range a.In {
+      src, dest, found := mostRecentlyModified(a.In[i], a.Paths[0], a.Paths[1])
+      if found && len(src) > 0 && len(dest) > 0 {
+        err := copyFile(a.In[i], src, dest)
+        if err != nil {
+          return err
+        }
       }
     }
   }
 
-  // update common files if one is more recently updated
-  fmt.Printf("\nUpdate modified:\n")
-  for i := range a.In {
-    src, dest, found := mostRecentlyModified(a.In[i], a.Paths[0], a.Paths[1])
-    if found && len(src) > 0 && len(dest) > 0 {
-      err := copyFile(a.In[i], src, dest)
+  // rename folder where new folder exists on both sides
+  newList, err := a.commonFolders(newList)
+  if err != nil {
+    return err
+  }
+
+  // copy new files
+  for i := range newList {
+    if len(newList[i]) > 0 {
+      fmt.Printf("\nCopy new files to: %v\n", a.Paths[1^i])
+      err := copyAll(newList[i], a.Paths[i], a.Paths[1^i])
       if err != nil {
         return err
       }
@@ -134,6 +148,51 @@ func (a *Args) process(in *os.File) error {
   }
 
   return nil
+}
+
+// renames folder to (1) in the instance where new folder exists on both sides
+func (a *Args) commonFolders(files [][]string) ([][]string, error) {
+  m := make(map[string]bool)
+  for i := range files[0] {
+    _, err := checkDir(filepath.Join(a.Paths[0], files[0][i]))
+    if err == nil {
+      m[files[0][i]] = true
+    }
+  }
+
+  var prev, prevRep string
+  for i := range files[1] {
+    if prev != "" && prevRep != "" {
+      // replace new folder name if exists in path
+      files[1][i] = strings.Replace(files[1][i], prev, prevRep, 1)
+    }
+
+    f := files[1][i]
+    _, err := checkDir(filepath.Join(a.Paths[1], f))
+    if err != nil {
+      continue
+    }
+
+    _, ok := m[f]
+    if ok && (prev == "" || strings.Index(f, prev) != 0) {
+      // if a folder and not part of previous path
+      // rename folder appending (X), incrementing X until does not exist
+      fp := filepath.Join(a.Paths[1], f)
+      newFolder, err := RenameFolder(fp, fp)
+      if err != nil {
+        return files, err
+      }
+
+      // update file name in slice
+      files[1][i] = strings.Replace(newFolder, a.Paths[1], "", 1)[1:]
+
+      // save updated name to replace within subpaths
+      prev = f
+      prevRep = files[1][i]
+    }
+  }
+
+  return files, nil
 }
 
 // save shared state to file
