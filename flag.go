@@ -1,6 +1,7 @@
 package main
 
 import (
+  "os"
   "fmt"
   "flag"
 )
@@ -28,39 +29,42 @@ Usage: ssync [OPTIONS] LABEL PATH1 PATH2
 Options:
 `
 
+var flagMain *flag.FlagSet
 var flagForcePath int
 var flagConfirm, flagVersion bool
 
 func init() {
+  flagMain = flag.NewFlagSet("main", flag.ContinueOnError)
+
   // setup options
-  flag.IntVar(&flagForcePath, "force", 0, "update modified using this path regardless" +
+  flagMain.IntVar(&flagForcePath, "force", 0, "update modified using this path regardless" +
     " of modified timestamp (0=timestamp, 1=PATH1, 2=PATH2)")
-  flag.BoolVar(&flagConfirm, "confirm", false, "confirm before deleting files")
-  flag.BoolVar(&flagVersion, "version", false, "print program version, then exit")
+  flagMain.BoolVar(&flagConfirm, "confirm", false, "confirm before deleting files")
+  flagMain.BoolVar(&flagVersion, "version", false, "print program version, then exit")
 
   // --help
-  flag.Usage = func() {
+  flagMain.Usage = func() {
     fmt.Printf(printUsage, version, description, args)
     // print options from built-in flag helper
-    flag.PrintDefaults()
+    flagMain.PrintDefaults()
     fmt.Println()
   }
 }
 
 // handle flag --help && --version
 func processFlags() ([]string, bool) {
-  flag.Parse()
-  a := flag.Args()
+  // show --help unless args
+  if len(os.Args) < 4 {
+    flagMain.Usage()
+    return os.Args, false
+  }
+
+  flagMain.Parse(os.Args[1:])
+  a := flagMain.Args()
 
   // --version
   if flagVersion {
     fmt.Printf("%s\n", version)
-    return a, false
-  }
-
-  // show --help unless args
-  if len(a) != 3 {
-    flag.Usage()
     return a, false
   }
 
