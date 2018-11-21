@@ -35,11 +35,13 @@ Options:
 
    * what has been deleted and should be deleted on the opposite path, then deletes.
 
-   * what is new and should be copied to the opposite path, then copies.
+   * what is new and should be copied to the opposite path.
 
 3. Compares modified timestamp of each common path to determine more recently modified, then updates on opposite path.
 
-4. Saves updated state to file on both paths.
+4. Copies new files ensuring both paths are not adding the same new folder. If so, appends (1) to the folder name upon copying the folder and files within from PATH2.
+
+5. Saves updated state to file on both paths.
 
 ## Developing
 
