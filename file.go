@@ -229,3 +229,33 @@ func copyFile(file, srcPath, destPath string) (err error) {
   err = os.Chtimes(destFile.Name(), srcInfo.ModTime(), srcInfo.ModTime())
   return
 }
+
+// rename folder src to dest. if dest already exists, append (x)
+// to folder name, increment (x) until folder path not found
+func RenameFolder(src, dest string) (string, error) {
+  // check if dest not found
+  _, err := os.Stat(dest)
+  if err == nil {
+    x := 0
+    for {
+      x += 1
+      newDir := fmt.Sprintf("%v (%v)", dest, x)
+
+      _, err := os.Stat(newDir)
+      if err != nil {
+        dest = newDir
+        break
+      }
+    }
+  }
+
+  // create all parent directories
+  err = os.MkdirAll(filepath.Dir(dest), 0777)
+  if err != nil {
+    return dest, err
+  }
+
+  // rename src to dest
+  err = os.Rename(src, dest)
+  return dest, err
+}
